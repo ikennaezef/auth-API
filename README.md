@@ -1,6 +1,6 @@
 # Auth API
 
-An API that handles the user authentication processes. It includes new user registration, login, email verification, forgot password functionality.
+An API that handles the user authentication processes. It includes new user registration, login, email verification with OTP, forgot password functionality.
 
 ## Documentation
 
