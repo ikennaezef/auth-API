@@ -1,3 +1,5 @@
+import { Request } from "express";
+import { JwtPayload } from "jsonwebtoken";
 import { ObjectId } from "mongoose";
 
 export type SendEmailParams = {
@@ -5,3 +7,9 @@ export type SendEmailParams = {
 	email: string;
 	isPasswordReset?: boolean;
 };
+
+export type ExtendedReq = Request & { email?: string };
+
+export type ExtendedPayload =
+	| (string & { email: string })
+	| (JwtPayload & { email: string });

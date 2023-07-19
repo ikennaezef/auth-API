@@ -5,6 +5,7 @@ import User from "../models/userModel";
 import OtpVerification from "../models/otpVerificationModel";
 import { sendMail } from "../utils/email";
 import { verifyOTP } from "../utils/otp";
+import { ExtendedReq } from "../types";
 
 export const register = async (req: Request, res: Response) => {
 	try {
@@ -19,6 +20,12 @@ export const register = async (req: Request, res: Response) => {
 			return res
 				.status(400)
 				.json({ message: "This email is already registered!" });
+		}
+
+		if (password.length < 8) {
+			return res
+				.status(400)
+				.json({ message: "Password must be at least 8 characters!" });
 		}
 
 		const hashedPassword = await bcrypt.hash(password, 10);
@@ -167,15 +174,61 @@ export const verifyPasswordReset = async (req: Request, res: Response) => {
 
 		if (validOTP) {
 			await OtpVerification.deleteMany({ userId });
-			const token = await jwt.sign({ email }, process.env.JWT_SECRET!);
-			res
-				.status(200)
-				.json({
-					user: { id: userId, email },
-					message: "User has been verified. Proceed to reset your pasword.",
-					token,
-				});
+			const token = jwt.sign({ email }, process.env.JWT_SECRET!, {
+				expiresIn: process.env.JWT_LIFETIME_RESET_PASSWORD!,
+			});
+			res.status(200).json({
+				user: { id: userId, email },
+				message: "User has been verified. Proceed to reset your pasword.",
+				token,
+			});
 		}
+	} catch (error: any) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+export const resetPassword = async (req: ExtendedReq, res: Response) => {
+	try {
+		const { password, confirmPassword, email } = req.body;
+		if (!email || !password || !confirmPassword) {
+			return res
+				.status(400)
+				.json({ message: "Please fill in all the fields!" });
+		}
+
+		const userExists = await User.findOne({ email });
+		if (!userExists) {
+			return res.status(400).json({ message: "User does not exist!" });
+		}
+
+		if (confirmPassword != password) {
+			return res.status(400).json({ message: "Passwords don't match!" });
+		}
+
+		if (password.length < 8) {
+			return res
+				.status(400)
+				.json({ message: "Password must be at least 8 characters!" });
+		}
+
+		const emailFromToken = req.email;
+		if (email != emailFromToken) {
+			return res
+				.status(403)
+				.json({ message: "You cannot reset another user's password!" });
+		}
+
+		const hashedPassword = await bcrypt.hash(password, 10);
+		await User.findOneAndUpdate(
+			{ email },
+			{ password: hashedPassword },
+			{ new: true }
+		);
+
+		res
+			.status(200)
+			.json({ message: "Password reset successful! Proceed to login." });
 	} catch (error: any) {
 		res.status(500).json({ message: error.message });
 	}
