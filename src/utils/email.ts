@@ -14,16 +14,18 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendMail = async (
-	{ _id, email }: SendEmailParams,
+	{ _id, email, isPasswordReset }: SendEmailParams,
 	res: Response
 ) => {
-	const otp = await createOTP(_id);
+	const otp = isPasswordReset ? await createOTP(_id) : await createOTP(_id);
 	await transporter.sendMail(
 		{
 			from: process.env.AUTH_EMAIL,
 			to: email,
-			subject: "Verify Your Email",
-			html: `<p>Hello, use this code <b>${otp}</b> to verify your email. This code expires in <b>30 minutes</b></p>`,
+			subject: isPasswordReset ? "Reset Your Password" : "Verify Your Email",
+			html: isPasswordReset
+				? `<p>Hello, you have requested for a password reset. Use this code <b>${otp}</b> to reset your password. This code expires in <b>10 minutes</b></p>`
+				: `<p>Hello, use this code <b>${otp}</b> to verify your email. This code expires in <b>30 minutes</b></p>`,
 		},
 		(err, info) => {
 			if (err) {
