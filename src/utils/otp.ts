@@ -9,6 +9,9 @@ export const createOTP = async (
 	const otp = `${Math.floor(1000 + Math.random() * 9000)}`;
 	const hashedOTP = await bcrypt.hash(otp, 10);
 
+	// Delete any previously existing OTPs for the user
+	await OtpVerification.deleteMany({ userId });
+
 	const newOTP = await OtpVerification.create({
 		userId,
 		otp: hashedOTP,
@@ -34,6 +37,7 @@ export const verifyOTP = async (userId: string, otp: string) => {
 	}
 
 	if (new Date(Date.now()) > otpExists.expiresAt) {
+		await OtpVerification.deleteMany({ userId });
 		throw Error("The OTP has expired! Please request for another one.");
 	}
 

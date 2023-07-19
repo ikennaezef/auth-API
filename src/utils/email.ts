@@ -17,7 +17,11 @@ export const sendMail = async (
 	{ _id, email, isPasswordReset }: SendEmailParams,
 	res: Response
 ) => {
-	const otp = isPasswordReset ? await createOTP(_id) : await createOTP(_id);
+	// 10 minutes OTP validity for password resets
+	const otp = isPasswordReset
+		? await createOTP(_id, 600000)
+		: await createOTP(_id);
+
 	await transporter.sendMail(
 		{
 			from: process.env.AUTH_EMAIL,
